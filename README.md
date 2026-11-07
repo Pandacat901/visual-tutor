@@ -2,6 +2,8 @@
 
 Visually is a whiteboard-first AI tutor prototype. Students bring a question, problem, image, or document; the tutor builds a progressive visual explanation, checks comprehension, and adapts without forcing a traditional chat experience.
 
+**Cloud demo:** [https://pandacat901.github.io/visual-tutor/](https://pandacat901.github.io/visual-tutor/)
+
 ## What is in this prototype
 
 - Student inquiry composer with image/PDF attachment UI
