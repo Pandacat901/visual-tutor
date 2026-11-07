@@ -297,7 +297,8 @@ button { color: inherit; }
 .ink-gold { color: #b98018; }
 .ink-muted { color: #78818c; }
 .board-divider { height: 8px; overflow: visible; transform: rotate(-.8deg); }
-.board-divider path, .board-arrow path, .drawn-frame rect { stroke: currentColor; fill: none; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.board-divider path, .board-arrow path { stroke: currentColor; fill: none; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
+.drawn-frame > rect { stroke: currentColor; fill: none; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .board-box, .board-prompt { display: grid; place-items: center; text-align: center; padding: 13px 16px; background: rgba(255,255,255,.56); }
 .board-box { font-size: clamp(8px, 1.05vw, 16px); }
 .board-prompt { font-size: clamp(9px, 1.1vw, 17px); }

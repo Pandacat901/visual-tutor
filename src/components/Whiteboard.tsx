@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import type { BoardElement, Lesson } from "@/types/board";
 
@@ -39,26 +39,44 @@ function PlantSketch({ progress }: { progress: number }) {
     <svg viewBox="0 0 240 240" className="plant-sketch" aria-label="Hand drawn plant">
       {paths.slice(0, 6).map((path, index) => {
         const localProgress = clamp(progress * total - index);
-        return <path key={path} d={path} pathLength="1" style={{ strokeDasharray: "1 1", strokeDashoffset: 1 - localProgress }} />;
+        return <path key={path} d={path} pathLength="100" strokeDasharray="100" strokeDashoffset={100 * (1 - localProgress)} />;
       })}
-      <circle cx="195" cy="38" r="25" pathLength="1" style={{ strokeDasharray: "1 1", strokeDashoffset: 1 - clamp(progress * total - 6) }} />
-      <path d={paths[6]} pathLength="1" style={{ strokeDasharray: "1 1", strokeDashoffset: 1 - clamp(progress * total - 7) }} />
+      <circle cx="195" cy="38" r="25" pathLength="100" strokeDasharray="100" strokeDashoffset={100 * (1 - clamp(progress * total - 6))} />
+      <path d={paths[6]} pathLength="100" strokeDasharray="100" strokeDashoffset={100 * (1 - clamp(progress * total - 7))} />
     </svg>
   );
 }
 
 function HandDrawnFrame({ progress, dashed = false }: { progress: number; dashed?: boolean }) {
+  const maskId = `frame-reveal-${useId().replaceAll(":", "")}`;
   return (
     <svg className="drawn-frame" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+          <rect
+            x="3"
+            y="4"
+            width="94"
+            height="92"
+            rx="3"
+            pathLength="100"
+            fill="none"
+            stroke="white"
+            strokeWidth="8"
+            strokeDasharray="100"
+            strokeDashoffset={100 * (1 - progress)}
+          />
+        </mask>
+      </defs>
       <rect
         x="3"
         y="4"
         width="94"
         height="92"
         rx="3"
-        pathLength="1"
         className={dashed ? "dashed" : undefined}
-        style={{ strokeDasharray: dashed ? "0.04 0.025" : "1 1", strokeDashoffset: 1 - progress }}
+        strokeDasharray={dashed ? "4 3" : undefined}
+        mask={`url(#${maskId})`}
       />
     </svg>
   );
@@ -79,7 +97,7 @@ function BoardItem({ element, progress, complete }: { element: BoardElement; pro
   if (element.type === "divider") {
     return (
       <svg className={`board-divider ink-${element.color}`} style={style} viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M1 5 C28 2 73 7 99 3" pathLength="1" style={{ strokeDasharray: "1 1", strokeDashoffset: 1 - progress }} />
+        <path d="M1 5 C28 2 73 7 99 3" pathLength="100" strokeDasharray="100" strokeDashoffset={100 * (1 - progress)} />
       </svg>
     );
   }
@@ -88,8 +106,8 @@ function BoardItem({ element, progress, complete }: { element: BoardElement; pro
     const headProgress = clamp((progress - 0.72) / 0.28);
     return (
       <svg className={`board-arrow ink-${element.color}`} style={style} viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M2 16 C28 13 70 17 91 14" pathLength="1" style={{ strokeDasharray: "1 1", strokeDashoffset: 1 - clamp(progress / 0.82) }} />
-        <path d="M82 5 L94 14 L83 25" pathLength="1" style={{ strokeDasharray: "1 1", strokeDashoffset: 1 - headProgress }} />
+        <path d="M2 16 C28 13 70 17 91 14" pathLength="100" strokeDasharray="100" strokeDashoffset={100 * (1 - clamp(progress / 0.82))} />
+        <path d="M82 5 L94 14 L83 25" pathLength="100" strokeDasharray="100" strokeDashoffset={100 * (1 - headProgress)} />
       </svg>
     );
   }
