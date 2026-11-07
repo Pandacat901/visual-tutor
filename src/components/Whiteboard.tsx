@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
-import { createStrokeLayout, pointOnStrokeLayout } from "@/lib/stroke-font";
-import type { StrokeLayout } from "@/lib/stroke-font";
 import type { BoardElement, Lesson } from "@/types/board";
 
 type WhiteboardProps = {
@@ -15,28 +13,6 @@ type WhiteboardProps = {
 };
 
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
-
-const fontSizes = { sm: 14, md: 19, lg: 25, xl: 33 } as const;
-
-function textGeometry(element: BoardElement) {
-  const fontSize = fontSizes[element.size ?? "md"];
-  const isFramed = element.type === "box" || element.type === "prompt";
-  const frameWidth = element.width;
-  const layout = createStrokeLayout(
-    element.text ?? element.label ?? "",
-    isFramed ? Math.min(fontSize, 18) : fontSize,
-    frameWidth ? frameWidth - 34 : undefined,
-  );
-  const resolvedHeight = element.height ?? (element.type === "divider" ? 8 : element.type === "arrow" ? 30 : layout.height);
-  const resolvedWidth = element.width ?? layout.width;
-  return {
-    frameHeight: resolvedHeight,
-    frameWidth: resolvedWidth,
-    layout,
-    offsetX: isFramed ? Math.max(0, (resolvedWidth - layout.width) / 2) : 0,
-    offsetY: isFramed ? Math.max(0, (resolvedHeight - layout.height) / 2) : 0,
-  };
-}
 
 function drawingDuration(element: BoardElement) {
   const text = element.text ?? element.label ?? "";
@@ -74,12 +50,8 @@ function PlantSketch({ progress }: { progress: number }) {
 function HandDrawnFrame({ progress, dashed = false }: { progress: number; dashed?: boolean }) {
   return (
     <svg className="drawn-frame" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-      <rect
-        x="3"
-        y="4"
-        width="94"
-        height="92"
-        rx="3"
+      <path
+        d="M5 8 C28 4 70 5 95 9 L96 89 C69 95 28 93 5 88 Z"
         pathLength="1"
         className={dashed ? "dashed" : undefined}
         style={{ strokeDasharray: dashed ? "0.04 0.025" : "1 1", strokeDashoffset: 1 - progress }}
@@ -88,48 +60,16 @@ function HandDrawnFrame({ progress, dashed = false }: { progress: number; dashed
   );
 }
 
-function StrokeText({
-  layout,
-  progress,
-  width,
-  height,
-  offsetX = 0,
-  offsetY = 0,
-}: {
-  layout: StrokeLayout;
-  progress: number;
-  width: number;
-  height: number;
-  offsetX?: number;
-  offsetY?: number;
-}) {
-  const targetLength = layout.totalLength * progress;
-  return (
-    <svg className="stroke-text" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMinYMin meet" aria-hidden="true">
-      <g transform={`translate(${offsetX} ${offsetY})`}>
-        {layout.paths.map((path, index) => {
-          const localProgress = clamp((targetLength - path.offset) / path.length);
-          return (
-            <path
-              key={`${index}-${path.d}`}
-              d={path.d}
-              pathLength="1"
-              style={{ strokeDasharray: "1 1", strokeDashoffset: 1 - localProgress }}
-            />
-          );
-        })}
-      </g>
-    </svg>
-  );
-}
-
-function BoardItem({ element, progress }: { element: BoardElement; progress: number }) {
-  const geometry = textGeometry(element);
+function BoardItem({ element, progress, complete }: { element: BoardElement; progress: number; complete: boolean }) {
+  const sourceText = element.text ?? element.label ?? "";
+  const textProgress = element.type === "box" || element.type === "prompt" ? clamp((progress - 0.48) / 0.52) : progress;
+  const characterCount = complete ? sourceText.length : Math.max(0, Math.ceil(sourceText.length * textProgress));
+  const displayText = sourceText.slice(0, characterCount);
   const style: CSSProperties = {
     left: `${(element.x / 1200) * 100}%`,
     top: `${(element.y / 780) * 100}%`,
-    width: `${(geometry.frameWidth / 1200) * 100}%`,
-    height: `${(geometry.frameHeight / 780) * 100}%`,
+    width: element.width ? `${(element.width / 1200) * 100}%` : undefined,
+    height: element.height ? `${(element.height / 780) * 100}%` : undefined,
   };
 
   if (element.type === "divider") {
@@ -155,45 +95,42 @@ function BoardItem({ element, progress }: { element: BoardElement; progress: num
   }
 
   if (element.type === "box") {
-    const textProgress = clamp((progress - 0.4) / 0.6);
     return (
       <div className={`board-item board-box ink-${element.color}`} style={style}>
-        <HandDrawnFrame progress={clamp(progress / 0.42)} />
-        <StrokeText layout={geometry.layout} progress={textProgress} width={geometry.frameWidth} height={geometry.frameHeight} offsetX={geometry.offsetX} offsetY={geometry.offsetY} />
+        <HandDrawnFrame progress={clamp(progress / 0.62)} />
+        <div className="board-frame-text">{displayText.split("\n").map((line, index) => <span key={`${line}-${index}`}>{line}</span>)}</div>
       </div>
     );
   }
 
   if (element.type === "prompt") {
-    const textProgress = clamp((progress - 0.4) / 0.6);
     return (
-      <div className={`board-item board-prompt ink-${element.color}`} style={style}>
-        <HandDrawnFrame progress={clamp(progress / 0.42)} dashed />
-        <StrokeText layout={geometry.layout} progress={textProgress} width={geometry.frameWidth} height={geometry.frameHeight} offsetX={geometry.offsetX} offsetY={geometry.offsetY} />
+      <div className={`board-item board-prompt ink-${element.color} size-${element.size ?? "md"}`} style={style}>
+        <HandDrawnFrame progress={clamp(progress / 0.58)} dashed />
+        <div className="board-frame-text">{displayText.split("\n").map((line, index) => <span key={`${line}-${index}`}>{line}</span>)}</div>
       </div>
     );
   }
 
   return (
-    <div className={`board-item board-${element.type} ink-${element.color ?? "navy"}`} style={style}>
-      <StrokeText layout={geometry.layout} progress={progress} width={geometry.frameWidth} height={geometry.frameHeight} />
+    <div className={`board-item board-${element.type} ink-${element.color ?? "navy"} size-${element.size ?? "md"}`} style={style}>
+      {displayText.split("\n").map((line, index) => <span key={`${line}-${index}`}>{line}</span>)}
     </div>
   );
 }
 
 function cursorPosition(element: BoardElement, progress: number) {
-  const geometry = textGeometry(element);
-  const width = geometry.frameWidth;
-  const height = geometry.frameHeight;
+  const text = element.text ?? element.label ?? "";
+  const width = element.width ?? Math.max(100, Math.min(590, text.length * 15));
+  const height = element.height ?? (element.type === "arrow" || element.type === "divider" ? 30 : 48);
   let x = element.x;
   let y = element.y + height * 0.55;
 
   if (element.type === "box" || element.type === "prompt") {
-    const outlineProgress = clamp(progress / 0.42);
-    if (progress > 0.42) {
-      const [textX, textY] = pointOnStrokeLayout(geometry.layout, clamp((progress - 0.4) / 0.6));
-      x = element.x + geometry.offsetX + textX;
-      y = element.y + geometry.offsetY + textY;
+    const outlineProgress = clamp(progress / 0.58);
+    if (progress > 0.58) {
+      x = element.x + width * clamp((progress - 0.58) / 0.42);
+      y = element.y + height * 0.58;
     } else if (outlineProgress < 0.28) {
       x = element.x + width * (outlineProgress / 0.28);
       y = element.y + 5;
@@ -210,12 +147,8 @@ function cursorPosition(element: BoardElement, progress: number) {
   } else if (element.type === "sketch") {
     x = element.x + width * (0.5 + Math.sin(progress * Math.PI * 5) * 0.25);
     y = element.y + height * (0.86 - progress * 0.7);
-  } else if (element.type === "arrow" || element.type === "divider") {
-    x = element.x + width * progress;
   } else {
-    const [textX, textY] = pointOnStrokeLayout(geometry.layout, progress);
-    x = element.x + textX;
-    y = element.y + textY;
+    x = element.x + width * progress;
   }
 
   return { left: `${(x / 1200) * 100}%`, top: `${(y / 780) * 100}%` };
@@ -278,7 +211,7 @@ export function Whiteboard({ lesson, revealAll, checkpointComplete, followUps, o
       <div className="whiteboard" role="img" aria-label={`Visual lesson: ${lesson.title}`}>
         <div className="board-grid" />
         {renderedElements.map((element, index) => (
-          <BoardItem key={element.id} element={element} progress={index === activeIndex ? progress : 1} />
+          <BoardItem key={element.id} element={element} progress={index === activeIndex ? progress : 1} complete={index < activeIndex} />
         ))}
         {activeElement && <div className="drawing-cursor is-drawing" style={cursorPosition(activeElement, progress)} aria-hidden="true"><span /></div>}
         <div className="board-signature">visually</div>
