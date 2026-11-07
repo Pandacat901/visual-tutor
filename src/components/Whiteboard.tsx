@@ -50,8 +50,12 @@ function PlantSketch({ progress }: { progress: number }) {
 function HandDrawnFrame({ progress, dashed = false }: { progress: number; dashed?: boolean }) {
   return (
     <svg className="drawn-frame" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-      <path
-        d="M5 8 C28 4 70 5 95 9 L96 89 C69 95 28 93 5 88 Z"
+      <rect
+        x="3"
+        y="4"
+        width="94"
+        height="92"
+        rx="3"
         pathLength="1"
         className={dashed ? "dashed" : undefined}
         style={{ strokeDasharray: dashed ? "0.04 0.025" : "1 1", strokeDashoffset: 1 - progress }}
