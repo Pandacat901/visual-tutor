@@ -342,6 +342,7 @@ button { color: inherit; }
 .follow-up-form button { width: 35px; border: 0; color: white; background: var(--ink); display: grid; place-items: center; cursor: pointer; }
 .follow-up-form button:disabled { opacity: .3; }
 .follow-up-form > small { color: #92979c; display: block; margin-top: 6px; font-size: 8px; }
+.planner-notice { margin: 10px 0 0; color: #9b5d21; font-size: 11px; line-height: 1.45; }
 
 @media (max-width: 1050px) {
   .studio { grid-template-columns: 0 minmax(500px, 1fr) 270px; }

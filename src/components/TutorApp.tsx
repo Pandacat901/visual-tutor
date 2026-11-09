@@ -33,16 +33,40 @@ export function TutorApp() {
   const [followUp, setFollowUp] = useState("");
   const [followUps, setFollowUps] = useState<BoardElement[]>([]);
   const [revealMenu, setRevealMenu] = useState(false);
+  const [planning, setPlanning] = useState(false);
+  const [plannerNotice, setPlannerNotice] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const startLesson = useCallback((prompt: string) => {
+  const startLesson = useCallback(async (prompt: string) => {
     const nextPrompt = prompt.trim() || "Help me understand this inquiry visually.";
     setInquiry(nextPrompt);
-    setLesson(createLesson(nextPrompt));
     setCheckpointComplete(false);
     setSelectedAnswer(null);
     setRevealAll(false);
     setFollowUps([]);
+    setPlannerNotice(null);
+    setPlanning(true);
+
+    try {
+      const response = await fetch("/api/tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inquiry: nextPrompt, context: null }),
+      });
+      const payload = await response.json();
+      if (response.ok && payload.lesson) {
+        setLesson(payload.lesson as Lesson);
+      } else if (payload.code === "AI_NOT_CONFIGURED") {
+        setLesson(createLesson(nextPrompt));
+        setPlannerNotice("AI planner is not configured here, so you are seeing a demonstration board.");
+      } else {
+        setPlannerNotice(payload.error ?? "The tutor could not create a board. Please try again.");
+      }
+    } catch {
+      setPlannerNotice("The tutor could not reach the planner. Please try again.");
+    } finally {
+      setPlanning(false);
+    }
   }, []);
 
   function handleSubmit(event: FormEvent) {
@@ -76,7 +100,7 @@ export function TutorApp() {
       <main className="landing">
         <nav className="topbar landing-nav">
           <div className="brand"><span className="brand-mark"><PenLine size={18} /></span>visually</div>
-          <div className="nav-note"><span className="status-dot" />Prototype · demo mode</div>
+          <div className="nav-note"><span className="status-dot" />AI board tutor</div>
         </nav>
 
         <section className="hero">
@@ -99,13 +123,14 @@ export function TutorApp() {
             <div className="composer-actions">
               <input ref={fileRef} type="file" accept="image/*,.pdf,.txt,.md" hidden onChange={(event) => handleFile(event.target.files?.[0])} />
               <button className="attach-button" type="button" onClick={() => fileRef.current?.click()}><Paperclip size={17} /> Add image or PDF</button>
-              <button className="primary-button" type="submit" disabled={!inquiry.trim() && !attachment}>Open the board <ArrowRight size={17} /></button>
+              <button className="primary-button" type="submit" disabled={planning || (!inquiry.trim() && !attachment)}>{planning ? "Planning board…" : "Open the board"} <ArrowRight size={17} /></button>
             </div>
+            {plannerNotice && <p className="planner-notice" role="status">{plannerNotice}</p>}
           </form>
 
           <div className="try-row">
             <span>Try an example</span>
-            {examples.map((example) => <button key={example.label} onClick={() => startLesson(example.prompt)}>{example.label}</button>)}
+            {examples.map((example) => <button key={example.label} disabled={planning} onClick={() => startLesson(example.prompt)}>{example.label}</button>)}
           </div>
         </section>
 
@@ -123,10 +148,10 @@ export function TutorApp() {
   return (
     <main className="workspace">
       <nav className="topbar workspace-nav">
-        <button className="brand brand-button" onClick={() => setLesson(null)}><span className="brand-mark"><PenLine size={18} /></span>visually</button>
+        <button className="brand brand-button" onClick={() => { setLesson(null); setPlannerNotice(null); }}><span className="brand-mark"><PenLine size={18} /></span>visually</button>
         <div className="lesson-meta"><span>{lesson.subject}</span><strong>{lesson.title}</strong></div>
         <div className="workspace-actions">
-          <button title="Restart lesson" onClick={() => startLesson(inquiry)}><RotateCcw size={17} /></button>
+          <button title="Restart lesson" disabled={planning} onClick={() => startLesson(inquiry)}><RotateCcw size={17} /></button>
           <button title="Full screen"><Maximize2 size={17} /></button>
           <div className="reveal-wrap">
             <button className="reveal-button" onClick={() => setRevealMenu((open) => !open)}><Lightbulb size={16} /> Help level <ChevronDown size={14} /></button>
@@ -147,7 +172,7 @@ export function TutorApp() {
           <div className="rail-step active"><span>1</span><div><strong>See the structure</strong><small>In progress</small></div></div>
           <div className={`rail-step ${checkpointComplete ? "complete" : ""}`}><span>2</span><div><strong>Try a move</strong><small>{checkpointComplete ? "Complete" : "Quick check"}</small></div></div>
           <div className={`rail-step ${checkpointComplete ? "active" : "locked"}`}><span>3</span><div><strong>Connect the pieces</strong><small>Visual recap</small></div></div>
-          <div className="rail-context"><Upload size={15} /><div><strong>Your inquiry</strong><p>{inquiry}</p>{attachment && <small>{attachment.name}</small>}</div></div>
+          <div className="rail-context"><Upload size={15} /><div><strong>Your inquiry</strong><p>{inquiry}</p>{attachment && <small>{attachment.name} · upload reading is coming next</small>}</div></div>
         </aside>
 
         <div className="board-stage">
@@ -189,7 +214,7 @@ export function TutorApp() {
           <form className="follow-up-form" onSubmit={submitFollowUp}>
             <label htmlFor="follow-up">Ask about anything on the board</label>
             <div><input id="follow-up" value={followUp} onChange={(event) => setFollowUp(event.target.value)} placeholder="Why does that step work?" /><button aria-label="Ask follow-up" disabled={!followUp.trim()}><ArrowRight size={16} /></button></div>
-            <small>Your answer will be drawn onto the board.</small>
+            <small>In the demo, this adds a board note. Live AI follow-ups are the next planner capability.</small>
           </form>
         </aside>
       </section>

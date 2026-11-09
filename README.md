@@ -2,7 +2,7 @@
 
 Visually is a whiteboard-first AI tutor prototype. Students bring a question, problem, image, or document; the tutor builds a progressive visual explanation, checks comprehension, and adapts without forcing a traditional chat experience.
 
-**Cloud demo:** [https://pandacat901.github.io/visual-tutor/](https://pandacat901.github.io/visual-tutor/)
+**Static demo:** [https://pandacat901.github.io/visual-tutor/](https://pandacat901.github.io/visual-tutor/)
 
 ## What is in this prototype
 
@@ -14,7 +14,17 @@ Visually is a whiteboard-first AI tutor prototype. Students bring a question, pr
 - Demonstrations for mathematics, science, and abstract theory
 - Responsive student workspace
 
-The current build uses deterministic demonstration lessons so it runs without credentials. The whiteboard model is structured (`Lesson` and `BoardElement`), ready to accept actions produced by a server-side AI planner.
+The GitHub Pages site is a frozen static demonstration. The application now includes a server-side OpenAI planner that returns validated `Lesson` and `BoardElement` actions, rather than a prose chat response. Without an API key it deliberately falls back to a labeled demonstration lesson.
+
+## Deploy the live AI tutor
+
+GitHub Pages cannot run server API routes or keep an OpenAI key secret, so deploy the live app on Vercel:
+
+1. In Vercel, import `Pandacat901/visual-tutor` from GitHub.
+2. In the project environment variables, add `OPENAI_API_KEY` (as a secret) and optionally `OPENAI_MODEL=gpt-5-mini`.
+3. Deploy. Vercel detects this Next.js app automatically.
+
+Do not put an OpenAI key in a `NEXT_PUBLIC_` variable, source file, or GitHub commit. The current planner accepts text inquiries; secure image/PDF reading and AI-generated follow-up boards are the next implementation steps.
 
 ## Run locally
 
@@ -32,7 +42,3 @@ npm run typecheck
 npm run lint
 npm run build
 ```
-
-## Next milestone
-
-Add a server-side tutoring planner that converts uploaded inquiries into validated board actions, with document extraction, mathematical verification, and source citations.
